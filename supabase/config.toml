@@ -1,0 +1,13 @@
+project_id = "dgwyzakaaxgznwhpjblp"
+
+[functions.create-user]
+verify_jwt = false
+
+[functions.seed-admin]
+verify_jwt = false
+
+[functions.list-documents]
+verify_jwt = false
+
+[functions.send-submission-notification]
+verify_jwt = true
