@@ -149,8 +149,8 @@ export default function Login() {
             <div className="mt-6 p-4 bg-secondary rounded-lg">
               <p className="text-xs text-muted-foreground text-center">
                 Use your BMT credentials to sign in.
-                <br />
-                Admin: admin@bmtops.com
+                {/* <br /> */}
+                {/* Admin: admin@bmtops.com */}
               </p>
             </div>
           </div>
