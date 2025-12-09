@@ -126,17 +126,17 @@ export default function Documents() {
   const uniqueDepartments = [...new Set(documents.map((d) => d.department))];
 
   return (
-    <div className="p-4 lg:p-6 space-y-4 animate-fade-in">
+    <div className="p-4 lg:p-6 space-y-4 animate-fade-in overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="text-2xl font-bold text-foreground">Documents</h1>
           <p className="text-muted-foreground">
             Policies, procedures, and reference documents
           </p>
         </div>
         {canUpload && (
-          <Button onClick={() => setUploadDialogOpen(true)}>
+          <Button onClick={() => setUploadDialogOpen(true)} className="shrink-0">
             <Upload className="h-4 w-4 mr-2" />
             Upload Document
           </Button>
@@ -152,7 +152,7 @@ export default function Documents() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-3">
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search documents..."
@@ -162,7 +162,7 @@ export default function Documents() {
           />
         </div>
         <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-          <SelectTrigger className="w-full sm:w-[180px] h-11">
+          <SelectTrigger className="w-full sm:w-[180px] h-11 shrink-0">
             <SelectValue placeholder="All Departments" />
           </SelectTrigger>
           <SelectContent>
@@ -199,24 +199,37 @@ export default function Documents() {
           {filteredDocs.map((doc) => (
             <Card
               key={doc.id}
-              className="hover:shadow-elevated transition-shadow cursor-pointer"
+              className="hover:shadow-elevated transition-shadow cursor-pointer overflow-hidden"
               onClick={() => handleDocumentClick(doc)}
             >
               <CardContent className="p-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center flex-shrink-0">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <div className="hidden sm:flex w-10 h-10 rounded-lg bg-secondary items-center justify-center shrink-0">
                     <FileText className="h-5 w-5 text-muted-foreground" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-semibold">{doc.title}</h3>
-                        <p className="text-sm text-muted-foreground mt-0.5">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div className="min-w-0">
+                        <h3 className="font-semibold truncate">{doc.title}</h3>
+                        <p className="text-sm text-muted-foreground mt-0.5 truncate">
                           {doc.policy_area} • {doc.version} • Updated{" "}
                           {format(new Date(doc.updated_at), "dd MMM yyyy")}
                         </p>
                       </div>
-                      <StatusBadge status={getStatusBadgeStatus(doc.status)} />
+                      <div className="flex items-center justify-between sm:justify-end gap-2">
+                        <StatusBadge status={getStatusBadgeStatus(doc.status)} />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="shrink-0 sm:hidden"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDocumentClick(doc);
+                          }}
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <span className="text-xs px-2 py-1 bg-muted rounded-md text-muted-foreground">
@@ -225,7 +238,7 @@ export default function Documents() {
                       <span className="text-xs px-2 py-1 bg-muted rounded-md text-muted-foreground">
                         {doc.responsible_role}
                       </span>
-                      {doc.tags?.slice(0, 3).map((tag) => (
+                      {doc.tags?.slice(0, 2).map((tag) => (
                         <span
                           key={tag}
                           className="text-xs px-2 py-1 bg-primary/10 rounded-md text-primary"
@@ -238,7 +251,7 @@ export default function Documents() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="flex-shrink-0"
+                    className="shrink-0 hidden sm:flex"
                     onClick={(e) => {
                       e.stopPropagation();
                       handleDocumentClick(doc);
