@@ -11,7 +11,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, User, Menu, Bell, X } from "lucide-react";
+import { LogOut, User, Menu, Bell, X, MoreHorizontal } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
@@ -200,6 +200,14 @@ export function BaseLayout({ navItems }: BaseLayoutProps) {
                 <span className="truncate max-w-[60px]">{item.label}</span>
               </NavLink>
             ))}
+            {/* More button to toggle sidebar */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <MoreHorizontal className="h-5 w-5" />
+              <span>More</span>
+            </button>
           </div>
         </nav>
       </div>

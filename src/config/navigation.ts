@@ -73,7 +73,9 @@ export function getNavItemsByRole(role: UserRole): NavItem[] {
   }
 }
 
-// Get mobile nav items (limited to 5)
+// Get mobile nav items (excludes Dashboard, limited to 4 to leave room for "More")
 export function getMobileNavItems(role: UserRole): NavItem[] {
-  return getNavItemsByRole(role).slice(0, 5);
+  return getNavItemsByRole(role)
+    .filter((item) => item.label !== "Dashboard")
+    .slice(0, 4);
 }
