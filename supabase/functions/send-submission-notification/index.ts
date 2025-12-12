@@ -123,7 +123,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
               ` : ''}
               
               <div style="text-align: center; margin-top: 30px;">
-                <a href="${supabaseUrl.replace('.supabase.co', '.lovable.app')}" style="display: inline-block; background: ${config.color}; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                <a href="${supabaseUrl.replace('.supabase.co', '.vercel.app')}" style="display: inline-block; background: ${config.color}; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600;">
                   ${status === 'approved' ? 'View Task' : 'Resubmit Now'}
                 </a>
               </div>
