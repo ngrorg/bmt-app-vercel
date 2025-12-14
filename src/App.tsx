@@ -32,8 +32,8 @@ import Users from "./pages/admin/Users";
 import Settings from "./pages/admin/Settings";
 
 // Pages - Driver/Warehouse
-// import AllTasks from "./pages/driver/AllTasks";
-// import Checklists from "./pages/driver/Checklists";
+import AllTasks from "./pages/driver/AllTasks";
+import Checklists from "./pages/driver/Checklists";
 
 const queryClient = new QueryClient();
 
@@ -158,17 +158,17 @@ function AppRoutes() {
         />
 
         {/* Admin, Executive, Ops Lead, Warehouse Routes */}
-        {/* <Route
+        <Route
           path="/submissions"
           element={
             <RoleGuard allowedRoles={["admin", "executive", "operational_lead", "warehouse"]}>
               <Submissions />
             </RoleGuard>
           }
-        /> */}
+        />
 
         {/* Driver & Warehouse Routes */}
-        {/* <Route path="/tasks/all" element={<AllTasks />} />
+        <Route path="/tasks/all" element={<AllTasks />} />
         <Route
           path="/checklists"
           element={
@@ -176,15 +176,15 @@ function AppRoutes() {
               <Checklists />
             </RoleGuard>
           }
-        /> */}
-        {/* <Route
+        />
+        <Route
           path="/checklists/:type"
           element={
             <RoleGuard allowedRoles={["driver", "warehouse"]}>
               <Checklists />
             </RoleGuard>
           }
-        /> */}
+        />
       </Route>
 
       {/* 404 */}
