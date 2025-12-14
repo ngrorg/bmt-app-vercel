@@ -4,6 +4,7 @@ import { DriverDashboard } from "@/components/dashboard/DriverDashboard";
 import { WarehouseDashboard } from "@/components/dashboard/WarehouseDashboard";
 import { ExecutiveDashboard } from "@/components/dashboard/ExecutiveDashboard";
 import { OperationalLeadDashboard } from "@/components/dashboard/OperationalLeadDashboard";
+import Tasks from "./Tasks";
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -12,10 +13,10 @@ export default function Dashboard() {
 
   const dashboardComponents = {
     admin: AdminDashboard,
-    driver: DriverDashboard,
-    warehouse: WarehouseDashboard,
-    executive: ExecutiveDashboard,
-    operational_lead: OperationalLeadDashboard,
+    driver: Tasks,//DriverDashboard,
+    warehouse: Tasks,//WarehouseDashboard,
+    executive: Tasks,//ExecutiveDashboard,
+    operational_lead: Tasks,//OperationalLeadDashboard,
   };
 
   const DashboardComponent = dashboardComponents[user.role];
