@@ -53,11 +53,11 @@ export function BaseLayout({ navItems }: BaseLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-screen w-64 bg-sidebar text-sidebar-foreground transform transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:transform-none",
+          "fixed top-0 left-0 z-50 min-h-screen w-64 bg-sidebar text-sidebar-foreground transform transition-transform duration-200 ease-in-out lg:sticky lg:top-0 lg:transform-none",
           sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
         )}
       >
-        <div className="flex flex-col h-full">
+        <div className="fixed bottom-0 flex flex-col h-full">
           {/* Sidebar Header */}
           <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
             <Logo size={70} color="hsl(var(--sidebar-foreground))" />
@@ -95,7 +95,7 @@ export function BaseLayout({ navItems }: BaseLayoutProps) {
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t border-sidebar-border">
+          <div className="fixed bottom-0 p-4 border-t border-sidebar-border">
             <p className="text-xs text-sidebar-foreground/60">
               Bulk Maritime Terminals
             </p>
@@ -202,7 +202,7 @@ export function BaseLayout({ navItems }: BaseLayoutProps) {
             ))}
             {/* More button to toggle sidebar */}
             <button
-              onClick={() => setSidebarOpen(true)}
+              onClick={() => setSidebarOpen((prev) => !prev)}
               className="flex flex-col items-center justify-center gap-1 px-3 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <MoreHorizontal className="h-5 w-5" />
