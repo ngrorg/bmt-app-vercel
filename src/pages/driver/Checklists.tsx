@@ -250,9 +250,9 @@ export default function Checklists() {
         </p>
       </div>
 
-      {/* Filter Tabs */}
+      {/* Filter Tabs - Horizontally scrollable on mobile */}
       <Tabs value={activeFilter} onValueChange={(v) => setActiveFilter(v as FilterStatus)}>
-        <TabsList className="w-full flex-wrap h-auto gap-1 bg-muted/50 p-1">
+        <TabsList className="w-full h-auto gap-1 bg-muted/50 p-1 overflow-x-auto flex-nowrap justify-start">
           {filterTabs.map((tab) => {
             const Icon = tab.icon;
             const showBadge = tab.value === "action_required" && actionRequiredCount > 0;
@@ -261,10 +261,10 @@ export default function Checklists() {
               <TabsTrigger
                 key={tab.value}
                 value={tab.value}
-                className="flex-1 min-w-[100px] gap-1.5 data-[state=active]:bg-background"
+                className="gap-1.5 data-[state=active]:bg-background whitespace-nowrap px-3 shrink-0"
               >
                 <Icon className="h-4 w-4" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="text-xs sm:text-sm">{tab.label}</span>
                 {showBadge && (
                   <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-xs">
                     {actionRequiredCount}
@@ -306,67 +306,101 @@ export default function Checklists() {
                 }`}
               >
                 <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    {/* Icon */}
-                    <div
-                      className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
-                        attachment.attachment_type === "checklist"
-                          ? "bg-primary/10 text-primary"
-                          : "bg-info/10 text-info"
-                      }`}
-                    >
-                      {attachment.attachment_type === "checklist" ? (
-                        <ClipboardCheck className="h-6 w-6" />
-                      ) : (
-                        <FileText className="h-6 w-6" />
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-semibold text-base">{attachment.title}</h3>
-                        <Badge variant="outline" className={config.className}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {config.label}
-                        </Badge>
+                  <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+                    {/* Top row: Icon + Title + Status + Button */}
+                    <div className="flex items-start gap-3 w-full">
+                      {/* Icon */}
+                      <div
+                        className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                          attachment.attachment_type === "checklist"
+                            ? "bg-primary/10 text-primary"
+                            : "bg-info/10 text-info"
+                        }`}
+                      >
+                        {attachment.attachment_type === "checklist" ? (
+                          <ClipboardCheck className="h-5 w-5 sm:h-6 sm:w-6" />
+                        ) : (
+                          <FileText className="h-5 w-5 sm:h-6 sm:w-6" />
+                        )}
                       </div>
 
-                      {/* Task Info */}
-                      {attachment.task && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {attachment.task.docket_number} - {attachment.task.customer_name}
-                        </p>
-                      )}
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-sm sm:text-base leading-tight">{attachment.title}</h3>
+                            <Badge variant="outline" className={`${config.className} mt-1`}>
+                              <StatusIcon className="h-3 w-3 mr-1" />
+                              {config.label}
+                            </Badge>
+                          </div>
+                          
+                          {/* Action Button - Desktop inline */}
+                          <div className="shrink-0 hidden sm:block">
+                            {isEditable ? (
+                              <Button
+                                variant={needsAction ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => handleOpenSubmission(attachment)}
+                              >
+                                {status === "pending" ? (
+                                  <>
+                                    Submit
+                                    <ChevronRight className="h-4 w-4 ml-1" />
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCw className="h-4 w-4 mr-1" />
+                                    Resubmit
+                                  </>
+                                )}
+                              </Button>
+                            ) : (
+                              <Button variant="ghost" size="sm" disabled>
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                {status === "submitted" ? "Awaiting Review" : "Completed"}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
 
-                      {/* Last submission date */}
-                      {latestSubmission && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {status === "pending" ? "Not submitted" : `Submitted ${format(new Date(latestSubmission.created_at), "MMM d, yyyy 'at' h:mm a")}`}
-                        </p>
-                      )}
+                        {/* Task Info */}
+                        {attachment.task && (
+                          <p className="text-xs sm:text-sm text-muted-foreground mt-1.5 truncate">
+                            {attachment.task.docket_number} - {attachment.task.customer_name}
+                          </p>
+                        )}
 
-                      {/* Reviewer Comments for flagged/rejected */}
-                      {needsAction && latestSubmission?.reviewer_comments && (
-                        <Alert
-                          variant="destructive"
-                          className="mt-3 py-2 border"
-                        >
-                          <MessageSquare className="h-4 w-4" />
-                          <AlertDescription className="text-sm">
-                            <span className="font-medium">Admin Feedback: </span>
-                            {latestSubmission.reviewer_comments}
-                          </AlertDescription>
-                        </Alert>
-                      )}
+                        {/* Last submission date */}
+                        {latestSubmission && status !== "pending" && (
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Submitted {format(new Date(latestSubmission.created_at), "MMM d, yyyy 'at' h:mm a")}
+                          </p>
+                        )}
+                      </div>
                     </div>
 
-                    {/* Action Button */}
-                    <div className="shrink-0">
+                    {/* Reviewer Comments for flagged/rejected */}
+                    {needsAction && latestSubmission?.reviewer_comments && (
+                      <Alert
+                        variant="destructive"
+                        className="py-2 border sm:ml-14"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <AlertDescription className="text-xs sm:text-sm">
+                          <span className="font-medium">Admin Feedback: </span>
+                          {latestSubmission.reviewer_comments}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+
+                    {/* Action Button - Mobile full width */}
+                    <div className="sm:hidden">
                       {isEditable ? (
                         <Button
                           variant={needsAction ? "default" : "outline"}
                           size="sm"
+                          className="w-full"
                           onClick={() => handleOpenSubmission(attachment)}
                         >
                           {status === "pending" ? (
@@ -382,7 +416,7 @@ export default function Checklists() {
                           )}
                         </Button>
                       ) : (
-                        <Button variant="ghost" size="sm" disabled>
+                        <Button variant="ghost" size="sm" className="w-full" disabled>
                           <CheckCircle className="h-4 w-4 mr-1" />
                           {status === "submitted" ? "Awaiting Review" : "Completed"}
                         </Button>
