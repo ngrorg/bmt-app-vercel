@@ -82,12 +82,30 @@ export default function Documents() {
 
   const handleDocumentClick = async (doc: Document) => {
     try {
-      const { data } = await supabase.storage
+      const { data, error } = await supabase.storage
         .from("documents")
         .createSignedUrl(doc.file_path, 3600);
 
+      if (error) {
+        console.error("Error getting signed URL:", error);
+        toast.error("Failed to open document");
+        return;
+      }
+
       if (data?.signedUrl) {
-        window.open(data.signedUrl, "_blank");
+        const newWindow = window.open(data.signedUrl, "_blank");
+        if (!newWindow || newWindow.closed || typeof newWindow.closed === 'undefined') {
+          // Popup was blocked - provide alternative
+          toast.info("Opening document...", {
+            description: "If the document doesn't open, check your popup blocker settings.",
+            action: {
+              label: "Open",
+              onClick: () => window.location.href = data.signedUrl
+            }
+          });
+        }
+      } else {
+        toast.error("Could not generate document link");
       }
     } catch (error) {
       console.error("Error getting document URL:", error);
