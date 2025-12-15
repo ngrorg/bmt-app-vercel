@@ -345,17 +345,17 @@ export function SubmissionReviewDialog({
 
             {/* Review Action Selection */}
             <div className="space-y-3">
-              <Label>Review Decision</Label>
+              <Label>Select Your Decision</Label>
               <RadioGroup
                 value={action}
                 onValueChange={(value) => setAction(value as "approve" | "reject" | "flag")}
-                className="space-y-2"
+                className="flex flex-row gap-2"
               >
                 {(["approve", "reject", "flag"] as const).map((actionType) => {
                   const config = actionConfig[actionType];
                   const Icon = config.icon;
                   return (
-                    <div key={actionType}>
+                    <div key={actionType} className="flex-1">
                       <RadioGroupItem
                         value={actionType}
                         id={actionType}
@@ -363,7 +363,7 @@ export function SubmissionReviewDialog({
                       />
                       <Label
                         htmlFor={actionType}
-                        className={`flex items-center gap-3 rounded-lg border-2 p-4 cursor-pointer transition-colors peer-data-[state=checked]:${config.bgColor} peer-data-[state=checked]:border-current ${config.color} hover:bg-muted`}
+                        className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 cursor-pointer transition-colors peer-data-[state=checked]:${config.bgColor} peer-data-[state=checked]:border-current ${config.color} hover:bg-muted`}
                       >
                         <Icon className="h-5 w-5" />
                         <span className="font-medium">{config.label}</span>
@@ -375,7 +375,7 @@ export function SubmissionReviewDialog({
             </div>
 
             {/* Comment */}
-            <div className="space-y-2">
+            <div className="space-y-2 px-1">
               <Label htmlFor="comment">
                 Comment {(action === "reject" || action === "flag") && <span className="text-destructive">*</span>}
               </Label>

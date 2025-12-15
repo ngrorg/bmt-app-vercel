@@ -65,36 +65,57 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, currentSession) => {
+        if (!isMounted) return;
+        
         setSession(currentSession);
         
         if (currentSession?.user) {
           // Defer Supabase calls with setTimeout to prevent deadlock
           setTimeout(() => {
-            fetchUserData(currentSession.user);
+            if (isMounted) {
+              fetchUserData(currentSession.user);
+            }
           }, 0);
         } else {
           setUser(null);
         }
-        
-        setIsLoading(false);
+        // Note: Don't set isLoading here - let initializeAuth handle it
       }
     );
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session: existingSession } }) => {
-      setSession(existingSession);
-      
-      if (existingSession?.user) {
-        fetchUserData(existingSession.user);
+    // THEN check for existing session - this handles initial loading state
+    const initializeAuth = async () => {
+      try {
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        
+        if (!isMounted) return;
+        
+        setSession(existingSession);
+        
+        if (existingSession?.user) {
+          // Wait for user data to be fetched BEFORE setting isLoading to false
+          await fetchUserData(existingSession.user);
+        }
+      } catch (error) {
+        console.error('Error initializing auth:', error);
+      } finally {
+        if (isMounted) {
+          setIsLoading(false);
+        }
       }
-      
-      setIsLoading(false);
-    });
+    };
 
-    return () => subscription.unsubscribe();
+    initializeAuth();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [fetchUserData]);
 
   const login = useCallback(async (email: string, password: string) => {
