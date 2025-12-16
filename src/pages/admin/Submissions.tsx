@@ -46,6 +46,7 @@ interface SubmissionWithDetails {
       id: string;
       docket_number: string;
       customer_name: string;
+      delivery_address: string;
     } | null;
   } | null;
 }
@@ -85,7 +86,8 @@ export default function Submissions() {
             task:task_id (
               id,
               docket_number,
-              customer_name
+              customer_name,
+              delivery_address
             )
           )
         `)
@@ -105,11 +107,15 @@ export default function Submissions() {
     const taskDocket = sub.task_attachment?.task?.docket_number || "";
     const attachmentTitle = sub.task_attachment?.title || "";
     const submitterName = sub.submitted_by_name || "";
+    const customerName = sub.task_attachment?.task.customer_name || ""
+    const deliveryAddress = sub.task_attachment?.task.delivery_address || ""
 
     const matchesSearch =
       taskDocket.toLowerCase().includes(search.toLowerCase()) ||
       attachmentTitle.toLowerCase().includes(search.toLowerCase()) ||
-      submitterName.toLowerCase().includes(search.toLowerCase());
+      submitterName.toLowerCase().includes(search.toLowerCase()) ||
+      customerName.toLowerCase().includes(search.toLowerCase()) || 
+      deliveryAddress.toLowerCase().includes(search.toLowerCase() );
 
     const matchesStatus =
       statusFilter === "all" || sub.status === statusFilter;
@@ -338,7 +344,9 @@ export default function Submissions() {
                     <tr key={sub.id} className="hover:bg-muted/30">
                       <td className="px-4 py-3">
                         <span className="font-mono text-sm font-semibold text-accent">
-                          {sub.task_attachment?.task?.docket_number || "—"}
+                          {sub.task_attachment?.task?.docket_number ? `Docket# ${sub.task_attachment?.task?.docket_number}` : "-"}
+                          <br/>{sub.task_attachment?.task?.customer_name ? `Customer# ${sub.task_attachment?.task?.customer_name}` : ""}
+                          <br/>{sub.task_attachment?.task?.delivery_address ? `Delivery# ${sub.task_attachment?.task?.delivery_address}` : ""}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm">
