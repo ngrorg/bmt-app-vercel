@@ -246,7 +246,7 @@ export function SubmissionReviewDialog({
           <DialogTitle>Review Submission</DialogTitle>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <ScrollArea className="flex-1 -mx-6 px-6 overflow-scroll">
           <div className="space-y-6 py-4">
             {/* Submission Info */}
             <div className="text-sm text-muted-foreground">

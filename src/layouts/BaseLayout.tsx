@@ -107,7 +107,7 @@ export function BaseLayout({ navItems }: BaseLayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-h-screen min-w-0 overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-h-screen min-w-0"> {/* overflow-x-hidden */}
         {/* Header */}
         <header className="sticky top-0 z-50 w-full border-b bg-card safe-top">
           <div className="flex h-16 items-center justify-between px-4">
