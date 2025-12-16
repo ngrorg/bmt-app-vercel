@@ -70,8 +70,8 @@ interface Supplier {
   name: string;
 }
 
-// Bag weight options
-const bagWeights = [500, 1000, 1500, 2000];
+// Bag weight options (in kg)
+const defaultBagWeights = [500, 1000, 1500, 2000];
 
 export function CreateTaskForm() {
   const navigate = useNavigate();
@@ -83,6 +83,8 @@ export function CreateTaskForm() {
   const [isLoadingSuppliers, setIsLoadingSuppliers] = useState(true);
   const [supplierSearchValue, setSupplierSearchValue] = useState('');
   const [supplierOpen, setSupplierOpen] = useState(false);
+  const [bagWeightSearchValue, setBagWeightSearchValue] = useState('');
+  const [bagWeightOpen, setBagWeightOpen] = useState(false);
 
   // Fetch drivers from database
   useEffect(() => {
@@ -421,22 +423,77 @@ export function CreateTaskForm() {
                 control={form.control}
                 name="bagWeight"
                 render={({ field }) => (
-                  <FormItem>
+                  <FormItem className="flex flex-col">
                     <FormLabel>Bag Weight (kg/bag)*</FormLabel>
-                    <Select onValueChange={(v) => field.onChange(Number(v))} defaultValue={String(field.value)}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select weight" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {bagWeights.map((weight) => (
-                          <SelectItem key={weight} value={String(weight)}>
-                            {weight}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <Popover open={bagWeightOpen} onOpenChange={setBagWeightOpen}>
+                      <PopoverTrigger asChild>
+                        <FormControl>
+                          <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={bagWeightOpen}
+                            className={cn(
+                              'w-full justify-between',
+                              !field.value && 'text-muted-foreground'
+                            )}
+                          >
+                            {field.value ? `${field.value} kg` : "Select or enter weight"}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                          </Button>
+                        </FormControl>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[200px] p-0" align="start">
+                        <Command>
+                          <CommandInput 
+                            placeholder="Enter weight in kg..." 
+                            value={bagWeightSearchValue}
+                            onValueChange={setBagWeightSearchValue}
+                          />
+                          <CommandList>
+                            <CommandEmpty>
+                              {bagWeightSearchValue.trim() && !isNaN(Number(bagWeightSearchValue)) ? (
+                                <Button
+                                  variant="ghost"
+                                  className="w-full justify-start"
+                                  onClick={() => {
+                                    field.onChange(Number(bagWeightSearchValue));
+                                    setBagWeightOpen(false);
+                                    setBagWeightSearchValue('');
+                                  }}
+                                >
+                                  Use "{bagWeightSearchValue} kg"
+                                </Button>
+                              ) : (
+                                "Enter a valid number"
+                              )}
+                            </CommandEmpty>
+                            <CommandGroup>
+                              {defaultBagWeights
+                                .filter(w => String(w).includes(bagWeightSearchValue))
+                                .map((weight) => (
+                                  <CommandItem
+                                    key={weight}
+                                    value={String(weight)}
+                                    onSelect={() => {
+                                      field.onChange(weight);
+                                      setBagWeightOpen(false);
+                                      setBagWeightSearchValue('');
+                                    }}
+                                  >
+                                    <Check
+                                      className={cn(
+                                        "mr-2 h-4 w-4",
+                                        field.value === weight ? "opacity-100" : "opacity-0"
+                                      )}
+                                    />
+                                    {weight} kg
+                                  </CommandItem>
+                                ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
                     <FormMessage />
                   </FormItem>
                 )}
