@@ -81,6 +81,9 @@ export default function Checklists() {
   const [dialogType, setDialogType] = useState<"checklist" | "document" | null>(null);
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
 
+  // Determine assigned_to filter based on user role
+  const assignedToFilter = user?.role === "warehouse" ? "warehouse" : "transport";
+
   // Refresh function for pull-to-refresh
   const handleRefresh = useCallback(async () => {
     if (!user?.id) return;
@@ -94,7 +97,7 @@ export default function Checklists() {
           checklist_template:checklist_templates(id, title),
           submissions:task_submissions(*)
         `)
-        .eq("assigned_to", "transport")
+        .eq("assigned_to", assignedToFilter)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -111,7 +114,7 @@ export default function Checklists() {
     } catch (error) {
       console.error("Error refreshing submissions:", error);
     }
-  }, [user?.id]);
+  }, [user?.id, assignedToFilter]);
 
   // Pull to refresh hook
   const { containerRef, pullDistance, progress, isRefreshing } = usePullToRefresh({
@@ -121,11 +124,11 @@ export default function Checklists() {
 
   useEffect(() => {
     if (user?.id) {
-      fetchDriverSubmissions();
+      fetchSubmissions();
     }
-  }, [user?.id]);
+  }, [user?.id, assignedToFilter]);
 
-  async function fetchDriverSubmissions() {
+  async function fetchSubmissions() {
     if (!user?.id) return;
 
     setIsLoading(true);
@@ -138,7 +141,7 @@ export default function Checklists() {
           checklist_template:checklist_templates(id, title),
           submissions:task_submissions(*)
         `)
-        .eq("assigned_to", "transport")
+        .eq("assigned_to", assignedToFilter)
         .order("created_at", { ascending: false });
 
       if (error) throw error;
@@ -180,7 +183,7 @@ export default function Checklists() {
 
   function handleSuccess() {
     handleCloseDialog();
-    fetchDriverSubmissions();
+    fetchSubmissions();
   }
 
   function canEdit(attachment: TaskAttachment): boolean {

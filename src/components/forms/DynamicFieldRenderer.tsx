@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { CalendarIcon, Upload, X, PenTool } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
+import { RichTextDisplay } from "@/components/forms/RichTextEditor";
 
 type FieldType = Database["public"]["Enums"]["field_type"];
 
@@ -43,6 +44,7 @@ interface FieldRendererProps {
   onChange: (value: unknown) => void;
   error?: string;
   disabled?: boolean;
+  className?: string;
 }
 
 // Helper component for field wrapper
@@ -50,13 +52,15 @@ function FieldWrapper({
   field,
   error,
   children,
+  className,
 }: {
   field: FormField;
   error?: string;
   children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="space-y-2">
+    <div className={cn("space-y-2", className)}>
       <Label className={cn(error && "text-destructive")}>
         {field.field_label}
         {field.is_required && <span className="text-destructive ml-1">*</span>}
@@ -71,9 +75,9 @@ function FieldWrapper({
 }
 
 // Text Input Field
-export function TextFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function TextFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   return (
-    <FieldWrapper field={field} error={error}>
+    <FieldWrapper field={field} error={error} className={className}>
       <Input
         placeholder={field.placeholder || `Enter ${field.field_label.toLowerCase()}...`}
         value={(value as string) || ""}
@@ -86,9 +90,9 @@ export function TextFieldRenderer({ field, value, onChange, error, disabled }: F
 }
 
 // Textarea Field
-export function TextareaFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function TextareaFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   return (
-    <FieldWrapper field={field} error={error}>
+    <FieldWrapper field={field} error={error} className={className}>
       <Textarea
         placeholder={field.placeholder || `Enter ${field.field_label.toLowerCase()}...`}
         value={(value as string) || ""}
@@ -102,9 +106,9 @@ export function TextareaFieldRenderer({ field, value, onChange, error, disabled 
 }
 
 // Number Field
-export function NumberFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function NumberFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   return (
-    <FieldWrapper field={field} error={error}>
+    <FieldWrapper field={field} error={error} className={className}>
       <Input
         type="number"
         placeholder={field.placeholder || "0"}
@@ -118,11 +122,11 @@ export function NumberFieldRenderer({ field, value, onChange, error, disabled }:
 }
 
 // Date Field
-export function DateFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function DateFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   const dateValue = value ? new Date(value as string) : undefined;
 
   return (
-    <FieldWrapper field={field} error={error}>
+    <FieldWrapper field={field} error={error} className={className}>
       <Popover>
         <PopoverTrigger asChild>
           <Button
@@ -151,34 +155,45 @@ export function DateFieldRenderer({ field, value, onChange, error, disabled }: F
   );
 }
 
-// Checkbox Field
-export function CheckboxFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+// Checkbox Field - Custom layout without duplicate label
+export function CheckboxFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   return (
-    <FieldWrapper field={field} error={error}>
-      <div className="flex items-center space-x-2">
+    <div className={cn("space-y-1", className)}>
+      <div className="flex items-start gap-3 p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors">
         <Checkbox
           id={field.field_name}
           checked={Boolean(value)}
           onCheckedChange={(checked) => onChange(checked)}
           disabled={disabled}
+          className="mt-0.5 h-5 w-5 shrink-0 rounded border-2 border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground"
         />
-        <label
-          htmlFor={field.field_name}
-          className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-        >
-          {field.placeholder || "Yes"}
-        </label>
+        <div className="flex-1 min-w-0">
+          <label
+            htmlFor={field.field_name}
+            className={cn(
+              "text-sm font-medium leading-relaxed cursor-pointer select-none block",
+              error && "text-destructive"
+            )}
+          >
+            {field.field_label}
+            {field.is_required && <span className="text-destructive ml-1">*</span>}
+          </label>
+          {field.help_text && (
+            <p className="text-xs text-muted-foreground mt-1">{field.help_text}</p>
+          )}
+        </div>
       </div>
-    </FieldWrapper>
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
   );
 }
 
 // Radio Field
-export function RadioFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function RadioFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   const options = field.options || [];
 
   return (
-    <FieldWrapper field={field} error={error}>
+    <FieldWrapper field={field} error={error} className={className}>
       <RadioGroup
         value={(value as string) || ""}
         onValueChange={onChange}
@@ -205,11 +220,11 @@ export function RadioFieldRenderer({ field, value, onChange, error, disabled }: 
 }
 
 // Select Field
-export function SelectFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function SelectFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   const options = field.options || [];
 
   return (
-    <FieldWrapper field={field} error={error}>
+    <FieldWrapper field={field} error={error} className={className}>
       <Select
         value={(value as string) || ""}
         onValueChange={onChange}
@@ -234,7 +249,7 @@ export function SelectFieldRenderer({ field, value, onChange, error, disabled }:
 }
 
 // File Upload Field
-export function FileFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function FileFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const fileValue = value as { name: string; file?: File } | null;
 
@@ -253,7 +268,7 @@ export function FileFieldRenderer({ field, value, onChange, error, disabled }: F
   }
 
   return (
-    <FieldWrapper field={field} error={error}>
+    <FieldWrapper field={field} error={error} className={className}>
       <input
         ref={inputRef}
         type="file"
@@ -294,7 +309,7 @@ export function FileFieldRenderer({ field, value, onChange, error, disabled }: F
 }
 
 // Signature Field
-export function SignatureFieldRenderer({ field, value, onChange, error, disabled }: FieldRendererProps) {
+export function SignatureFieldRenderer({ field, value, onChange, error, disabled, className }: FieldRendererProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const signatureValue = value as string | null;
@@ -351,7 +366,7 @@ export function SignatureFieldRenderer({ field, value, onChange, error, disabled
   }
 
   return (
-    <FieldWrapper field={field} error={error}>
+    <FieldWrapper field={field} error={error} className={className}>
       <div className={cn("border rounded-lg overflow-hidden", error && "border-destructive")}>
         {signatureValue ? (
           <div className="relative">
@@ -397,30 +412,57 @@ export function SignatureFieldRenderer({ field, value, onChange, error, disabled
   );
 }
 
+// Paragraph Field (Display Only - no input required)
+export function ParagraphFieldRenderer({ field, className }: FieldRendererProps) {
+  // The content is stored in the help_text field for paragraph type
+  const content = field.help_text || "";
+
+  if (!content) {
+    return null;
+  }
+
+  return (
+    <div className={cn("py-2", className)}>
+      <RichTextDisplay content={content} />
+    </div>
+  );
+}
+
 // Main renderer that picks the right component
 export function DynamicFieldRenderer(props: FieldRendererProps) {
-  const { field } = props;
+  const { field, className } = props;
+  
+  // Paragraph fields always render full width
+  const isParagraph = field.field_type === "paragraph";
+  const wrapperClass = cn(
+    isParagraph && "col-span-full",
+    className
+  );
+
+  const propsWithClass = { ...props, className: wrapperClass };
 
   switch (field.field_type) {
     case "text":
-      return <TextFieldRenderer {...props} />;
+      return <TextFieldRenderer {...propsWithClass} />;
     case "textarea":
-      return <TextareaFieldRenderer {...props} />;
+      return <TextareaFieldRenderer {...propsWithClass} />;
     case "number":
-      return <NumberFieldRenderer {...props} />;
+      return <NumberFieldRenderer {...propsWithClass} />;
     case "date":
-      return <DateFieldRenderer {...props} />;
+      return <DateFieldRenderer {...propsWithClass} />;
     case "checkbox":
-      return <CheckboxFieldRenderer {...props} />;
+      return <CheckboxFieldRenderer {...propsWithClass} />;
     case "radio":
-      return <RadioFieldRenderer {...props} />;
+      return <RadioFieldRenderer {...propsWithClass} />;
     case "select":
-      return <SelectFieldRenderer {...props} />;
+      return <SelectFieldRenderer {...propsWithClass} />;
     case "file":
-      return <FileFieldRenderer {...props} />;
+      return <FileFieldRenderer {...propsWithClass} />;
     case "signature":
-      return <SignatureFieldRenderer {...props} />;
+      return <SignatureFieldRenderer {...propsWithClass} />;
+    case "paragraph":
+      return <ParagraphFieldRenderer {...propsWithClass} />;
     default:
-      return <TextFieldRenderer {...props} />;
+      return <TextFieldRenderer {...propsWithClass} />;
   }
 }

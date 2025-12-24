@@ -19,13 +19,12 @@ import { toast } from "sonner";
 import { Tables } from "@/integrations/supabase/types";
 import { useAuth } from "@/context/AuthContext";
 import { format } from "date-fns";
-
-type TaskSubmission = Tables<"task_submissions">;
+import { SubmissionWithDetails } from "@/types";
 
 interface SubmissionReviewDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  submission: TaskSubmission;
+  submission: SubmissionWithDetails;
   initialAction: "approve" | "reject" | "flag";
   onSuccess: () => void;
   taskTitle?: string;
@@ -78,6 +77,19 @@ export function SubmissionReviewDialog({
   const isDocument = !formData && submission.file_path;
   const isImage = submission.file_name?.match(/\.(jpg|jpeg|png|webp|gif)$/i);
 
+  const canReviewRole = ["admin", "warehouse", "executive", "operational_lead"].includes(
+    user?.role || ""
+  );
+
+  // Warehouse users cannot review their own department's submissions
+  const canReviewSubmission = () => {
+    if (!canReviewRole) return false;
+    if (user?.role === "warehouse" && submission.task_attachment?.assigned_to === "warehouse") {
+      return false;
+    }
+    return true;
+  };
+  
   // Fetch signed URL for document preview
   useEffect(() => {
     if (open && isDocument && submission.file_path) {
@@ -341,56 +353,60 @@ export function SubmissionReviewDialog({
               <p className="text-muted-foreground text-center py-4">No submission data available</p>
             )}
 
-            <Separator />
-
             {/* Review Action Selection */}
-            <div className="space-y-3">
-              <Label>Select Your Decision</Label>
-              <RadioGroup
-                value={action}
-                onValueChange={(value) => setAction(value as "approve" | "reject" | "flag")}
-                className="flex flex-row gap-2"
-              >
-                {(["approve", "reject", "flag"] as const).map((actionType) => {
-                  const config = actionConfig[actionType];
-                  const Icon = config.icon;
-                  return (
-                    <div key={actionType} className="flex-1">
-                      <RadioGroupItem
-                        value={actionType}
-                        id={actionType}
-                        className="peer sr-only"
-                      />
-                      <Label
-                        htmlFor={actionType}
-                        className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 cursor-pointer transition-colors peer-data-[state=checked]:${config.bgColor} peer-data-[state=checked]:border-current ${config.color} hover:bg-muted`}
-                      >
-                        <Icon className="h-5 w-5" />
-                        <span className="font-medium">{config.label}</span>
-                      </Label>
-                    </div>
-                  );
-                })}
-              </RadioGroup>
-            </div>
+            { canReviewSubmission() && (
+              <>
+              <Separator />
 
-            {/* Comment */}
-            <div className="space-y-2 px-1">
-              <Label htmlFor="comment">
-                Comment {(action === "reject" || action === "flag") && <span className="text-destructive">*</span>}
-              </Label>
-              <Textarea
-                id="comment"
-                placeholder={
-                  action === "approve"
-                    ? "Optional comment..."
-                    : "Explain why this submission is being " + (action === "reject" ? "rejected" : "flagged") + "..."
-                }
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                rows={3}
-              />
-            </div>
+              <div className="space-y-3">
+                <Label>Select Your Decision</Label>
+                <RadioGroup
+                  value={action}
+                  onValueChange={(value) => setAction(value as "approve" | "reject" | "flag")}
+                  className="flex flex-row gap-2"
+                >
+                  {(["approve", "reject", "flag"] as const).map((actionType) => {
+                    const config = actionConfig[actionType];
+                    const Icon = config.icon;
+                    return (
+                      <div key={actionType} className="flex-1">
+                        <RadioGroupItem
+                          value={actionType}
+                          id={actionType}
+                          className="peer sr-only"
+                        />
+                        <Label
+                          htmlFor={actionType}
+                          className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 cursor-pointer transition-colors peer-data-[state=checked]:${config.bgColor} peer-data-[state=checked]:border-current ${config.color} hover:bg-muted`}
+                        >
+                          <Icon className="h-5 w-5" />
+                          <span className="font-medium">{config.label}</span>
+                        </Label>
+                      </div>
+                    );
+                  })}
+                </RadioGroup>
+              </div>
+
+              {/* Comment */}
+              <div className="space-y-2 px-1">
+                <Label htmlFor="comment">
+                  Comment {(action === "reject" || action === "flag") && <span className="text-destructive">*</span>}
+                </Label>
+                <Textarea
+                  id="comment"
+                  placeholder={
+                    action === "approve"
+                      ? "Optional comment..."
+                      : "Explain why this submission is being " + (action === "reject" ? "rejected" : "flagged") + "..."
+                  }
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  rows={3}
+                />
+              </div>
+              </>
+            )}
           </div>
         </ScrollArea>
 
@@ -398,7 +414,7 @@ export function SubmissionReviewDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button 
+          {canReviewSubmission()&&(<Button 
             onClick={handleSubmitReview} 
             disabled={isLoading}
             className={
@@ -409,7 +425,7 @@ export function SubmissionReviewDialog({
           >
             {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
             {actionConfig[action].label}
-          </Button>
+          </Button>)}
         </DialogFooter>
       </DialogContent>
     </Dialog>

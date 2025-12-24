@@ -8,6 +8,7 @@ import {
   Package,
   CheckSquare,
   PlusCircle,
+  ListChecks,
   LucideIcon,
 } from "lucide-react";
 import { UserRole } from "@/types";
@@ -27,6 +28,7 @@ export const adminNavItems: NavItem[] = [
   { label: "Submissions", href: "/submissions", icon: FileText, end: true },
   { label: "Documents", href: "/documents", icon: Package, end: true },
   { label: "Users", href: "/users", icon: Users, end: true },
+  { label: "Checklist Templates", href: "/checklist-templates", icon: ListChecks, end: true },
   { label: "Settings", href: "/settings", icon: Settings, end: true },
 ];
 
@@ -34,7 +36,7 @@ export const adminNavItems: NavItem[] = [
 export const driverNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, end: true },
   { label: "My Tasks", href: "/tasks", icon: Truck, end: true },
-  { label: "Checklists", href: "/checklists", icon: CheckSquare },
+  { label: "My Checklists", href: "/checklists", icon: CheckSquare },
   { label: "Documents", href: "/documents", icon: Package, end: true },
 ];
 
@@ -42,7 +44,7 @@ export const driverNavItems: NavItem[] = [
 export const warehouseNavItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, end: true },
   { label: "Tasks", href: "/tasks", icon: ClipboardList, end: true },
-  { label: "Checklists", href: "/checklists", icon: CheckSquare },
+  { label: "My Checklists", href: "/checklists", icon: CheckSquare },
   { label: "Submissions", href: "/submissions", icon: FileText, end: true },
   { label: "Documents", href: "/documents", icon: Package, end: true },
 ];
