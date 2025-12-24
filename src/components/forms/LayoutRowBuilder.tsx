@@ -67,6 +67,7 @@ const fieldTypeLabels: Record<FieldType, string> = {
   select: "Dropdown",
   file: "Upload File",
   signature: "Signature",
+  paragraph: "Paragraph",
 };
 
 export function LayoutRowBuilder({

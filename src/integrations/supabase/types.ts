@@ -430,6 +430,7 @@ export type Database = {
         | "select"
         | "file"
         | "signature"
+        | "paragraph"
       submission_status:
         | "pending"
         | "submitted"
@@ -583,6 +584,7 @@ export const Constants = {
         "select",
         "file",
         "signature",
+        "paragraph",
       ],
       submission_status: [
         "pending",

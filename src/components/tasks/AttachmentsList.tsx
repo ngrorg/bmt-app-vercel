@@ -57,7 +57,13 @@ const statusConfig = {
 
 export function AttachmentsList({ attachments, canReview, onRefresh, taskTitle, taskId }: AttachmentsListProps) {
   const { user } = useAuth();
-  const [reviewingSubmission, setReviewingSubmission] = useState<{ submission: TaskSubmission; attachmentTitle: string } | null>(null);
+  const [reviewingSubmission, setReviewingSubmission] = useState<{ 
+    submission: TaskSubmission; 
+    attachmentTitle: string;
+    attachmentId: string;
+    attachmentType: string;
+    assignedTo: string;
+  } | null>(null);
   const [reviewAction, setReviewAction] = useState<"approve" | "reject" | "flag">("approve");
   const [submittingChecklist, setSubmittingChecklist] = useState<TaskAttachment | null>(null);
   const [uploadingDocument, setUploadingDocument] = useState<TaskAttachment | null>(null);
@@ -85,8 +91,18 @@ export function AttachmentsList({ attachments, canReview, onRefresh, taskTitle, 
     }
   }
 
-  function openReviewDialog(submission: TaskSubmission, action: "approve" | "reject" | "flag", attachmentTitle: string) {
-    setReviewingSubmission({ submission, attachmentTitle });
+  function openReviewDialog(
+    submission: TaskSubmission, 
+    action: "approve" | "reject" | "flag", 
+    attachment: TaskAttachment
+  ) {
+    setReviewingSubmission({ 
+      submission, 
+      attachmentTitle: attachment.title,
+      attachmentId: attachment.id,
+      attachmentType: attachment.attachment_type,
+      assignedTo: attachment.assigned_to || "transport",
+    });
     setReviewAction(action);
   }
 
@@ -206,7 +222,7 @@ export function AttachmentsList({ attachments, canReview, onRefresh, taskTitle, 
                           size="sm"
                           variant="outline"
                           className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                          onClick={() => openReviewDialog(latestSubmission, "approve", attachment.title)}
+                          onClick={() => openReviewDialog(latestSubmission, "approve", attachment)}
                         >
                           <CheckCircle2 className="h-4 w-4 mr-1" />
                           Approve
@@ -215,7 +231,7 @@ export function AttachmentsList({ attachments, canReview, onRefresh, taskTitle, 
                           size="sm"
                           variant="outline"
                           className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => openReviewDialog(latestSubmission, "reject", attachment.title)}
+                          onClick={() => openReviewDialog(latestSubmission, "reject", attachment)}
                         >
                           <XCircle className="h-4 w-4 mr-1" />
                           Reject
@@ -224,7 +240,7 @@ export function AttachmentsList({ attachments, canReview, onRefresh, taskTitle, 
                           size="sm"
                           variant="outline"
                           className="text-yellow-600 hover:text-yellow-700 hover:bg-yellow-50"
-                          onClick={() => openReviewDialog(latestSubmission, "flag", attachment.title)}
+                          onClick={() => openReviewDialog(latestSubmission, "flag", attachment)}
                         >
                           <Flag className="h-4 w-4 mr-1" />
                           Flag
@@ -254,7 +270,7 @@ export function AttachmentsList({ attachments, canReview, onRefresh, taskTitle, 
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       {latestSubmission && (
-                        <DropdownMenuItem onClick={() => openReviewDialog(latestSubmission, "approve", attachment.title)}>
+                        <DropdownMenuItem onClick={() => openReviewDialog(latestSubmission, "approve", attachment)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View Submission
                         </DropdownMenuItem>
@@ -280,7 +296,16 @@ export function AttachmentsList({ attachments, canReview, onRefresh, taskTitle, 
         <SubmissionReviewDialog
           open={!!reviewingSubmission}
           onOpenChange={(open) => !open && setReviewingSubmission(null)}
-          submission={reviewingSubmission.submission}
+          submission={{
+            ...reviewingSubmission.submission,
+            task_attachment: {
+              id: reviewingSubmission.attachmentId,
+              title: reviewingSubmission.attachmentTitle,
+              attachment_type: reviewingSubmission.attachmentType,
+              assigned_to: reviewingSubmission.assignedTo,
+              task: null,
+            },
+          }}
           initialAction={reviewAction}
           onSuccess={() => {
             setReviewingSubmission(null);

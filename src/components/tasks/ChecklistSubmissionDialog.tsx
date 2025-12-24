@@ -209,10 +209,10 @@ export function ChecklistSubmissionDialog({
         ) : (
           <>
             <ScrollArea className="flex-1 pr-4 -mr-4">
-              <div className="space-y-6 py-4">
+              <div className="py-4">
                 {/* Reviewer feedback alert for resubmissions */}
                 {isResubmission && reviewerComments && (
-                  <Alert variant="destructive" className="border-2">
+                  <Alert variant="destructive" className="border-2 mb-6">
                     <div className="flex items-start gap-3">
                       {latestSubmission?.status === "rejected" ? (
                         <XCircle className="h-5 w-5 mt-0.5" />
@@ -232,16 +232,18 @@ export function ChecklistSubmissionDialog({
                   </Alert>
                 )}
 
-                {fields.map((field) => (
-                  <DynamicFieldRenderer
-                    key={field.id}
-                    field={field}
-                    value={formData[field.field_name]}
-                    onChange={(value) => handleFieldChange(field.field_name, value)}
-                    error={errors[field.field_name]}
-                    disabled={isSubmitting}
-                  />
-                ))}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {fields.map((field) => (
+                    <DynamicFieldRenderer
+                      key={field.id}
+                      field={field}
+                      value={formData[field.field_name]}
+                      onChange={(value) => handleFieldChange(field.field_name, value)}
+                      error={errors[field.field_name]}
+                      disabled={isSubmitting}
+                    />
+                  ))}
+                </div>
               </div>
             </ScrollArea>
 

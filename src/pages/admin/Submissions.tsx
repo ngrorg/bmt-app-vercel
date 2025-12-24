@@ -19,43 +19,14 @@ import { format } from "date-fns";
 import { SubmissionReviewDialog } from "@/components/tasks/SubmissionReviewDialog";
 import { toast } from "sonner";
 import { Tables, Json } from "@/integrations/supabase/types";
-
-type SubmissionStatus = "pending" | "approved" | "rejected" | "flagged";
-type TaskSubmission = Tables<"task_submissions">;
-
-interface SubmissionWithDetails {
-  id: string;
-  status: SubmissionStatus;
-  created_at: string;
-  updated_at: string;
-  submitted_by: string | null;
-  submitted_by_name: string | null;
-  form_data: Json | null;
-  file_path: string | null;
-  file_name: string | null;
-  reviewer_comments: string | null;
-  reviewed_at: string | null;
-  reviewed_by: string | null;
-  task_attachment_id: string;
-  task_attachment: {
-    id: string;
-    title: string;
-    attachment_type: string;
-    assigned_to: string;
-    task: {
-      id: string;
-      docket_number: string;
-      customer_name: string;
-      delivery_address: string;
-    } | null;
-  } | null;
-}
+import { SubmissionWithDetails } from "@/types";
 
 export default function Submissions() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
   const [reviewDialogOpen, setReviewDialogOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<SubmissionWithDetails | null>(null);
   const [reviewAction, setReviewAction] = useState<"approve" | "reject" | "flag">("approve");
@@ -107,20 +78,24 @@ export default function Submissions() {
     const taskDocket = sub.task_attachment?.task?.docket_number || "";
     const attachmentTitle = sub.task_attachment?.title || "";
     const submitterName = sub.submitted_by_name || "";
-    const customerName = sub.task_attachment?.task.customer_name || ""
-    const deliveryAddress = sub.task_attachment?.task.delivery_address || ""
+    const customerName = sub.task_attachment?.task?.customer_name || "";
+    const deliveryAddress = sub.task_attachment?.task?.delivery_address || "";
+    const assignedTo = sub.task_attachment?.assigned_to || "";
 
     const matchesSearch =
       taskDocket.toLowerCase().includes(search.toLowerCase()) ||
       attachmentTitle.toLowerCase().includes(search.toLowerCase()) ||
       submitterName.toLowerCase().includes(search.toLowerCase()) ||
       customerName.toLowerCase().includes(search.toLowerCase()) || 
-      deliveryAddress.toLowerCase().includes(search.toLowerCase() );
+      deliveryAddress.toLowerCase().includes(search.toLowerCase());
 
     const matchesStatus =
       statusFilter === "all" || sub.status === statusFilter;
 
-    return matchesSearch && matchesStatus;
+    const matchesDepartment =
+      departmentFilter === "all" || assignedTo === departmentFilter;
+
+    return matchesSearch && matchesStatus && matchesDepartment;
   });
 
   const handleOpenReview = (submission: SubmissionWithDetails, action: "approve" | "reject" | "flag" | "view") => {
@@ -215,6 +190,16 @@ export default function Submissions() {
             className="pl-9 h-11"
           />
         </div>
+        <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+          <SelectTrigger className="w-full sm:w-[160px] h-11">
+            <SelectValue placeholder="All Departments" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Departments</SelectItem>
+            <SelectItem value="transport">Transport</SelectItem>
+            <SelectItem value="warehouse">Warehouse</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-full sm:w-[160px] h-11">
             <SelectValue placeholder="All Status" />
@@ -274,7 +259,7 @@ export default function Submissions() {
                   <Eye className="h-4 w-4 mr-1" />
                   View
                 </Button>
-                {canReview && sub.status === "pending" && (
+                { canReview && sub.status === "pending" && (
                   <>
                     <Button
                       variant="outline"
@@ -370,7 +355,7 @@ export default function Submissions() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {canReview && sub.status === "pending" && (
+                          { canReview && sub.status === "pending" && (
                             <>
                               <Button
                                 variant="ghost"
@@ -414,7 +399,7 @@ export default function Submissions() {
         <SubmissionReviewDialog
           open={reviewDialogOpen}
           onOpenChange={setReviewDialogOpen}
-          submission={selectedSubmission as unknown as TaskSubmission}
+          submission={selectedSubmission}
           taskTitle={selectedSubmission.task_attachment?.task?.docket_number || "Task"}
           attachmentTitle={selectedSubmission.task_attachment?.title || "Submission"}
           taskId={selectedSubmission.task_attachment?.task?.id}

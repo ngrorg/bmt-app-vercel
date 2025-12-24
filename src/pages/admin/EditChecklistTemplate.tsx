@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,33 +37,25 @@ import {
   Upload,
   PenTool,
   Save,
-  Pencil,
   FileText,
-  Copy,
   ChevronDown,
-  Settings2
+  Settings2,
+  Eye
 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Database, Tables, Json } from "@/integrations/supabase/types";
-import { LayoutRowsManager, LayoutRow } from "@/components/forms/LayoutRowBuilder";
+import { Database, Json } from "@/integrations/supabase/types";
+import { LayoutRow } from "@/components/forms/LayoutRowBuilder";
 import { DynamicFieldRenderer, FormField } from "@/components/forms/DynamicFieldRenderer";
 import { RichTextEditor } from "@/components/forms/RichTextEditor";
-import { Eye } from "lucide-react";
 
 type FieldType = Database["public"]["Enums"]["field_type"];
-type DepartmentType = Database["public"]["Enums"]["department_type"];
-type ChecklistTemplate = Tables<"checklist_templates">;
-type TaskAttachment = Tables<"task_attachments"> & {
-  checklist_templates?: { title: string; description: string | null } | null;
-};
 
 interface TemplateField {
   id: string;
@@ -104,25 +96,17 @@ const fieldTypeLabels: Record<FieldType, string> = {
   paragraph: "Paragraph (Display Only)",
 };
 
-export default function ChecklistBuilder() {
-  const { taskId } = useParams<{ taskId: string }>();
+export default function EditChecklistTemplate() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const templateId = searchParams.get("templateId");
+  
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(true);
-
-  // Existing data
-  const [existingAttachments, setExistingAttachments] = useState<TaskAttachment[]>([]);
-  const [existingTemplates, setExistingTemplates] = useState<ChecklistTemplate[]>([]);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
-
-  // Editing mode
-  const [editingAttachmentId, setEditingAttachmentId] = useState<string | null>(null);
 
   // Template info
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [isRequired, setIsRequired] = useState(false);
-  const [assignedTo, setAssignedTo] = useState<DepartmentType>("transport");
 
   // Form fields
   const [fields, setFields] = useState<TemplateField[]>([]);
@@ -135,52 +119,21 @@ export default function ChecklistBuilder() {
   const [previewValues, setPreviewValues] = useState<Record<string, unknown>>({});
 
   useEffect(() => {
-    fetchData();
-  }, [taskId]);
+    if (templateId) {
+      loadTemplate(templateId);
+    } else {
+      navigate("/checklist-templates");
+    }
+  }, [templateId, navigate]);
 
-  async function fetchData() {
+  async function loadTemplate(id: string) {
     try {
       setIsLoadingData(true);
 
-      // Fetch existing checklist attachments for this task
-      if (taskId) {
-        const { data: attachments, error: attachmentsError } = await supabase
-          .from("task_attachments")
-          .select(`
-            *,
-            checklist_templates (title, description)
-          `)
-          .eq("task_id", taskId)
-          .eq("attachment_type", "checklist")
-          .order("created_at", { ascending: true });
-
-        if (attachmentsError) throw attachmentsError;
-        setExistingAttachments(attachments || []);
-      }
-
-      // Fetch all existing templates
-      const { data: templates, error: templatesError } = await supabase
-        .from("checklist_templates")
-        .select("*")
-        .order("title");
-
-      if (templatesError) throw templatesError;
-      setExistingTemplates(templates || []);
-
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      toast.error("Failed to load data");
-    } finally {
-      setIsLoadingData(false);
-    }
-  }
-
-  async function loadTemplateFields(templateId: string) {
-    try {
       const { data: template, error: templateError } = await supabase
         .from("checklist_templates")
         .select("*")
-        .eq("id", templateId)
+        .eq("id", id)
         .single();
 
       if (templateError) throw templateError;
@@ -188,7 +141,7 @@ export default function ChecklistBuilder() {
       const { data: templateFields, error: fieldsError } = await supabase
         .from("checklist_template_fields")
         .select("*")
-        .eq("template_id", templateId)
+        .eq("template_id", id)
         .order("display_order");
 
       if (fieldsError) throw fieldsError;
@@ -198,7 +151,7 @@ export default function ChecklistBuilder() {
       setDescription(template.description || "");
       setFields(
         (templateFields || []).map((f) => ({
-          id: crypto.randomUUID(),
+          id: f.id,
           field_name: f.field_name,
           field_label: f.field_label,
           field_type: f.field_type,
@@ -215,27 +168,12 @@ export default function ChecklistBuilder() {
       const layoutConfig = template.layout_config as unknown as LayoutRow[] | null;
       setLayoutRows(Array.isArray(layoutConfig) ? layoutConfig : []);
 
-      toast.success("Template loaded - make your changes");
     } catch (error) {
       console.error("Error loading template:", error);
       toast.error("Failed to load template");
-    }
-  }
-
-  function handleTemplateSelect(templateId: string) {
-    setSelectedTemplateId(templateId);
-    if (templateId) {
-      loadTemplateFields(templateId);
-      setEditingAttachmentId(null);
-    }
-  }
-
-  async function handleEditAttachment(attachment: TaskAttachment) {
-    if (attachment.checklist_template_id) {
-      setEditingAttachmentId(attachment.id);
-      setSelectedTemplateId(attachment.checklist_template_id);
-      setIsRequired(attachment.is_required);
-      await loadTemplateFields(attachment.checklist_template_id);
+      navigate("/checklist-templates");
+    } finally {
+      setIsLoadingData(false);
     }
   }
 
@@ -267,17 +205,6 @@ export default function ChecklistBuilder() {
     setFields(fields.map(f => f.id === id ? { ...f, isExpanded: !f.isExpanded } : f));
   }
 
-  function resetForm() {
-    setTitle("");
-    setDescription("");
-    setIsRequired(false);
-    setAssignedTo("transport");
-    setFields([]);
-    setLayoutRows([]);
-    setSelectedTemplateId("");
-    setEditingAttachmentId(null);
-  }
-
   async function handleSubmit() {
     if (!title.trim()) {
       toast.error("Please enter a title for the checklist");
@@ -295,25 +222,37 @@ export default function ChecklistBuilder() {
       return;
     }
 
+    if (!templateId) {
+      toast.error("Template ID is missing");
+      return;
+    }
+
     try {
       setIsLoading(true);
 
-      // Create the template
-      const { data: template, error: templateError } = await supabase
+      // Update the template
+      const { error: templateError } = await supabase
         .from("checklist_templates")
-        .insert({
+        .update({
           title: title.trim(),
           description: description.trim() || null,
           layout_config: layoutRows as unknown as Json,
         })
-        .select()
-        .single();
+        .eq("id", templateId);
 
       if (templateError) throw templateError;
 
-      // Create the fields
+      // Delete existing fields
+      const { error: deleteError } = await supabase
+        .from("checklist_template_fields")
+        .delete()
+        .eq("template_id", templateId);
+
+      if (deleteError) throw deleteError;
+
+      // Insert updated fields
       const fieldsToInsert = fields.map((f, index) => ({
-        template_id: template.id,
+        template_id: templateId,
         field_name: f.field_name || `field_${index + 1}`,
         field_label: f.field_label,
         field_type: f.field_type,
@@ -330,51 +269,15 @@ export default function ChecklistBuilder() {
 
       if (fieldsError) throw fieldsError;
 
-      // If editing an existing attachment, update it
-      if (editingAttachmentId) {
-        const { error: updateError } = await supabase
-          .from("task_attachments")
-          .update({
-            title: title.trim(),
-            checklist_template_id: template.id,
-            is_required: isRequired,
-            assigned_to: assignedTo,
-          })
-          .eq("id", editingAttachmentId);
-
-        if (updateError) throw updateError;
-
-        toast.success("Checklist updated");
-      } else if (taskId) {
-        // Create new attachment
-        const { error: attachmentError } = await supabase
-          .from("task_attachments")
-          .insert({
-            task_id: taskId,
-            attachment_type: "checklist",
-            title: title.trim(),
-            checklist_template_id: template.id,
-            is_required: isRequired,
-            assigned_to: assignedTo,
-          });
-
-        if (attachmentError) throw attachmentError;
-
-        toast.success("Checklist created and added to task");
-      } else {
-        toast.success("Checklist template created");
-      }
-
-      navigate(`/tasks/${taskId}`);
+      toast.success("Template updated successfully");
+      navigate("/checklist-templates");
     } catch (error) {
-      console.error("Error creating checklist:", error);
-      toast.error("Failed to create checklist");
+      console.error("Error updating template:", error);
+      toast.error("Failed to update template");
     } finally {
       setIsLoading(false);
     }
   }
-
-  const backUrl = taskId ? `/tasks/${taskId}` : "/settings";
 
   if (isLoadingData) {
     return (
@@ -388,7 +291,7 @@ export default function ChecklistBuilder() {
     <div className="p-4 lg:p-6 space-y-4 animate-fade-in">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link to={backUrl}>
+        <Link to="/checklist-templates">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -396,142 +299,29 @@ export default function ChecklistBuilder() {
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <ClipboardList className="h-6 w-6" />
-            {editingAttachmentId ? "Edit Checklist" : "Create Checklist"}
+            Edit Template
           </h1>
           <p className="text-muted-foreground">
-            {taskId ? "Build a custom checklist form for this task" : "Create a reusable checklist template"}
+            Update checklist template fields and settings
           </p>
         </div>
       </div>
 
-      {/* Existing Attachments */}
-      {existingAttachments.length > 0 && (
-        <Card className="py-2">
-          <CardContent className="py-2">
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-muted-foreground">
-                Existing Checklists ({existingAttachments.length})
-              </span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {existingAttachments.map((attachment) => (
-                <div
-                  key={attachment.id}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-md border text-sm transition-colors cursor-pointer ${
-                    editingAttachmentId === attachment.id
-                      ? "border-primary bg-primary/10"
-                      : "hover:bg-muted/50"
-                  }`}
-                  onClick={() => handleEditAttachment(attachment)}
-                >
-                  <ClipboardList className="h-3.5 w-3.5 text-primary" />
-                  <span className="font-medium">{attachment.title}</span>
-                  {attachment.is_required && (
-                    <Badge variant="outline" className="text-xs py-0 px-1.5">Required</Badge>
-                  )}
-                  <Pencil className="h-3 w-3 text-muted-foreground" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Use Existing Template */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Copy className="h-5 w-5" />
-            Start from Template
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            <Label>Select an existing template to use as starting point</Label>
-            <div className="flex gap-3">
-              <Select value={selectedTemplateId} onValueChange={handleTemplateSelect}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="Choose a template to copy..." />
-                </SelectTrigger>
-                <SelectContent className="bg-popover z-50">
-                  {existingTemplates.map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      <div className="flex flex-col items-start">
-                        <span>{template.title}</span>
-                        {template.description && (
-                          <span className="text-muted-foreground text-xs">
-                            {template.description}
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {(title || fields.length > 0) && (
-                <Button variant="outline" onClick={resetForm}>
-                  Clear Form
-                </Button>
-              )}
-            </div>
-            {existingTemplates.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                No existing templates. Build one from scratch below.
-              </p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      <Separator />
-
       {/* Template Info */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Checklist Details</CardTitle>
+          <CardTitle className="text-lg">Template Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">Title *</Label>
-              <Input
-                id="title"
-                placeholder="e.g., Vehicle Inspection Checklist"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </div>
-            {taskId && (
-              <div className="space-y-2">
-                <Label>Assign To</Label>
-                <Select value={assignedTo} onValueChange={(v) => setAssignedTo(v as DepartmentType)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover z-50">
-                    <SelectItem value="transport">Transport (Drivers)</SelectItem>
-                    <SelectItem value="warehouse">Warehouse</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              placeholder="e.g., Vehicle Inspection Checklist"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
           </div>
-          {taskId && (
-            <div className="flex items-center gap-4 p-4 rounded-lg bg-muted/50">
-              <div className="flex-1">
-                <Label htmlFor="required">Required for Task</Label>
-                <p className="text-sm text-muted-foreground">
-                  Must be completed before task completion
-                </p>
-              </div>
-              <Switch
-                id="required"
-                checked={isRequired}
-                onCheckedChange={setIsRequired}
-              />
-            </div>
-          )}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea
@@ -796,22 +586,6 @@ export default function ChecklistBuilder() {
         </CardContent>
       </Card>
 
-      {/* Layout Configuration - Hidden for now, using default 2-col layout for md+ screens */}
-      {/* {fields.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Layout Configuration</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LayoutRowsManager
-              layoutRows={layoutRows}
-              fields={fields}
-              onLayoutRowsChange={setLayoutRows}
-            />
-          </CardContent>
-        </Card>
-      )} */}
-
       {/* Preview Modal */}
       <Dialog open={isPreviewOpen} onOpenChange={setIsPreviewOpen}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -847,54 +621,50 @@ export default function ChecklistBuilder() {
               </div>
             )}
           </div>
-          {/* Preview Action Buttons */}
-          <div className="flex items-center justify-between pt-4 border-t">
+          <div className="flex items-center justify-end pt-4 border-t">
             <Button variant="outline" onClick={() => setIsPreviewOpen(false)}>
-              Cancel
+              Close
             </Button>
-            <div className="flex items-center gap-3">
-              <Button variant="secondary" onClick={() => setIsPreviewOpen(false)}>
-                Save as Draft
-              </Button>
-              <Button onClick={() => setIsPreviewOpen(false)}>
-                Submit
-              </Button>
-            </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between gap-4 py-4">
-        <p className="text-sm text-muted-foreground">
-          {fields.length} field{fields.length !== 1 ? "s" : ""} added
-        </p>
-        <div className="flex items-center gap-3">
+      {/* Fixed Action Bar */}
+      <div className="py-4">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
           <Button
+            type="button"
             variant="outline"
-            onClick={() => {
-              setPreviewValues({});
-              setIsPreviewOpen(true);
-            }}
+            onClick={() => setIsPreviewOpen(true)}
             disabled={fields.length === 0}
           >
             <Eye className="h-4 w-4 mr-2" />
             Preview
           </Button>
-          <Link to={backUrl}>
-            <Button variant="outline">Cancel</Button>
-          </Link>
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isLoading || !title.trim() || fields.length === 0}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <Save className="h-4 w-4 mr-2" />
-            )}
-            {editingAttachmentId ? "Update Checklist" : taskId ? "Create & Add to Task" : "Create Template"}
-          </Button>
+
+          <div className="flex items-center gap-3">
+            <Link to="/checklist-templates">
+              <Button type="button" variant="ghost">
+                Cancel
+              </Button>
+            </Link>
+            <Button
+              onClick={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Update Template
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
     </div>

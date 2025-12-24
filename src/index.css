@@ -159,3 +159,74 @@
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* TipTap Editor Styles */
+.tiptap p.is-editor-empty:first-child::before {
+  @apply text-muted-foreground;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+.tiptap {
+  @apply min-h-[120px];
+}
+
+.tiptap:focus {
+  @apply outline-none;
+}
+
+.tiptap ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+.tiptap ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+.tiptap ul li,
+.tiptap ol li {
+  display: list-item !important;
+  margin: 0.25rem 0;
+}
+
+.tiptap ul li p,
+.tiptap ol li p {
+  margin: 0;
+}
+
+.tiptap h2 {
+  @apply text-lg font-bold mt-4 mb-2;
+}
+
+.tiptap h3 {
+  @apply text-base font-semibold mt-3 mb-2;
+}
+
+.tiptap p {
+  @apply mb-2;
+}
+
+/* Rich text display (for rendering stored content) */
+.rich-text-display ul {
+  list-style-type: disc !important;
+  padding-left: 1.5rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+.rich-text-display ol {
+  list-style-type: decimal !important;
+  padding-left: 1.5rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+.rich-text-display ul li,
+.rich-text-display ol li {
+  display: list-item !important;
+  margin: 0.25rem 0;
+}

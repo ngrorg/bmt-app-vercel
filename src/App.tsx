@@ -28,6 +28,8 @@ import Documents from "./pages/shared/Documents";
 // Pages - Admin
 import CreateTask from "./pages/admin/CreateTask";
 import ChecklistBuilder from "./pages/admin/ChecklistBuilder";
+import ChecklistTemplates from "./pages/admin/ChecklistTemplates";
+import EditChecklistTemplate from "./pages/admin/EditChecklistTemplate";
 import Submissions from "./pages/admin/Submissions";
 import Users from "./pages/admin/Users";
 import Settings from "./pages/admin/Settings";
@@ -156,6 +158,30 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/checklist-templates"
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <ChecklistTemplates />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/checklist-builder"
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <ChecklistBuilder />
+            </RoleGuard>
+          }
+        />
+        <Route
+          path="/checklist-templates/edit"
+          element={
+            <RoleGuard allowedRoles={["admin"]}>
+              <EditChecklistTemplate />
+            </RoleGuard>
+          }
+        />
+        <Route
           path="/settings"
           element={
             <RoleGuard allowedRoles={["admin"]}>
@@ -168,7 +194,7 @@ function AppRoutes() {
         <Route
           path="/users"
           element={
-            <RoleGuard allowedRoles={["admin", "operational_lead"]}>
+            <RoleGuard allowedRoles={["admin", "operational_lead", 'executive']}>
               <Users />
             </RoleGuard>
           }
