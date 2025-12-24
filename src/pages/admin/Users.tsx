@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,10 +16,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Search, Plus, MoreVertical, Edit, Ban, Trash2 } from "lucide-react";
+import { Search, Plus, MoreVertical, Edit, Ban, Trash2, Loader2, RefreshCw } from "lucide-react";
 import { UserRole } from "@/types";
 import { AddUserDialog } from "@/components/users/AddUserDialog";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const roleLabels: Record<UserRole, string> = {
   admin: "Admin",
@@ -29,70 +31,73 @@ const roleLabels: Record<UserRole, string> = {
   operational_lead: "Ops Lead",
 };
 
-// Demo data
-const users = [
-  {
-    id: "1",
-    firstName: "John",
-    lastName: "Smith",
-    email: "john.driver@bmt.com.au",
-    phone: "+61 4 1234 5678",
-    role: "driver" as UserRole,
-    status: "active" as const,
-  },
-  {
-    id: "2",
-    firstName: "Sarah",
-    lastName: "Johnson",
-    email: "sarah.driver@bmt.com.au",
-    phone: "+61 4 2345 6789",
-    role: "driver" as UserRole,
-    status: "active" as const,
-  },
-  {
-    id: "3",
-    firstName: "Mike",
-    lastName: "Brown",
-    email: "mike.warehouse@bmt.com.au",
-    phone: "+61 4 3456 7890",
-    role: "warehouse" as UserRole,
-    status: "active" as const,
-  },
-  {
-    id: "4",
-    firstName: "Emma",
-    lastName: "Davis",
-    email: "emma.exec@bmt.com.au",
-    phone: "+61 2 9999 0002",
-    role: "executive" as UserRole,
-    status: "active" as const,
-  },
-  {
-    id: "5",
-    firstName: "David",
-    lastName: "Wilson",
-    email: "david.ops@bmt.com.au",
-    phone: "+61 2 9999 0003",
-    role: "operational_lead" as UserRole,
-    status: "pending" as const,
-  },
-];
+interface UserData {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  department: string;
+  avatarUrl: string;
+  role: UserRole;
+  status: "active" | "pending";
+  createdAt: string;
+  lastSignIn: string | null;
+}
 
 export default function Users() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [addUserOpen, setAddUserOpen] = useState(false);
+  const [users, setUsers] = useState<UserData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
 
   const isAdmin = user?.role === "admin";
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(search.toLowerCase()) ||
-      user.email.toLowerCase().includes(search.toLowerCase());
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
-    const matchesRole = roleFilter === "all" || user.role === roleFilter;
+  async function fetchUsers() {
+    setIsLoading(true);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        toast.error("You must be logged in to view users");
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke('list-users');
+
+      if (error) {
+        console.error('Error fetching users:', error);
+        toast.error(error.message || "Failed to load users");
+        return;
+      }
+
+      if (data?.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      setUsers(data.users || []);
+    } catch (error: any) {
+      console.error('Error:', error);
+      toast.error(error.message || "An unexpected error occurred");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
+      u.firstName.toLowerCase().includes(search.toLowerCase()) ||
+      u.lastName.toLowerCase().includes(search.toLowerCase()) ||
+      u.email.toLowerCase().includes(search.toLowerCase());
+
+    const matchesRole = roleFilter === "all" || u.role === roleFilter;
 
     return matchesSearch && matchesRole;
   });
@@ -104,20 +109,26 @@ export default function Users() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">Users</h1>
           <p className="text-muted-foreground">
-            {filteredUsers.length} user{filteredUsers.length !== 1 ? "s" : ""}
+            {isLoading ? "Loading..." : `${filteredUsers.length} user${filteredUsers.length !== 1 ? "s" : ""}`}
           </p>
         </div>
-        {isAdmin && (
-          <Button onClick={() => setAddUserOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add User
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={fetchUsers} disabled={isLoading}>
+            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
           </Button>
-        )}
+          {isAdmin && (
+            <Button onClick={() => setAddUserOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add User
+            </Button>
+          )}
+        </div>
       </div>
 
       <AddUserDialog 
         open={addUserOpen} 
         onOpenChange={setAddUserOpen}
+        onSuccess={fetchUsers}
       />
 
       {/* Filters */}
@@ -147,70 +158,95 @@ export default function Users() {
       </div>
 
       {/* Users List */}
-      <div className="space-y-3">
-        {filteredUsers.map((user) => (
-          <Card key={user.id}>
-            <CardContent className="p-4">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-12 w-12">
-                  <AvatarFallback className="bg-primary text-primary-foreground">
-                    {user.firstName[0]}
-                    {user.lastName[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">
-                      {user.firstName} {user.lastName}
-                    </h3>
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full ${
-                        user.status === "active"
-                          ? "bg-success/10 text-success"
-                          : "bg-warning/10 text-warning"
-                      }`}
-                    >
-                      {user.status}
-                    </span>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : filteredUsers.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            {users.length === 0 
+              ? "No users found. Add your first user to get started."
+              : "No users match your search criteria."}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-3">
+          {filteredUsers.map((u) => (
+            <Card key={u.id}>
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-12 w-12">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
+                      {u.firstName?.[0] || u.email[0].toUpperCase()}
+                      {u.lastName?.[0] || ''}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">
+                        {u.firstName || u.lastName 
+                          ? `${u.firstName} ${u.lastName}`.trim()
+                          : u.email}
+                      </h3>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          u.status === "active"
+                            ? "bg-success/10 text-success"
+                            : "bg-warning/10 text-warning"
+                        }`}
+                      >
+                        {u.status}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground truncate">
+                      {u.email}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs px-2 py-0.5 bg-secondary rounded-md">
+                        {roleLabels[u.role] || u.role}
+                      </span>
+                      {u.phone && (
+                        <span className="text-xs text-muted-foreground hidden sm:inline">
+                          {u.phone}
+                        </span>
+                      )}
+                      {u.department && (
+                        <span className="text-xs text-muted-foreground hidden md:inline">
+                          • {u.department}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-muted-foreground truncate">
-                    {user.email}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs px-2 py-0.5 bg-secondary rounded-md">
-                      {roleLabels[user.role]}
-                    </span>
-                    <span className="text-xs text-muted-foreground hidden sm:inline">
-                      {user.phone}
-                    </span>
-                  </div>
+                  {isAdmin && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Ban className="h-4 w-4 mr-2" />
+                          Deactivate
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Edit
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Ban className="h-4 w-4 mr-2" />
-                      Deactivate
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
-                      <Trash2 className="h-4 w-4 mr-2" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
